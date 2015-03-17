@@ -1,0 +1,107 @@
+---
+title: "Regression Model Project"
+author: "Jerry Hsieh"
+date: "2014/11/20"
+output: html_document
+---
+
+
+#### Introduction
+This project is to use "Weight Lifting Exercise Dataset" and Machine Learning prediction model to predict 20 test case (tessting dataset) base on training dataset (including 19,622 samples)
+
+
+#### About Data
+The dataset is based on "Weight Lifting Exercise Dataset" cited below
+
+Cite:
+
+Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. Qualitative Activity Recognition of Weight Lifting Exercises. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human '13) . Stuttgart, Germany: ACM SIGCHI, 2013.
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz3UWkr867x
+
+Main purpose of this dataset is to quantify "how well they do it".
+
+Six young health participants were asked to perform one set of 10 repetitions of the Unilateral Dumbbell Biceps Curl in five different fashions: 
+exactly according to the specification (Class A) 
+
+throwing the elbows to the front (Class B) 
+
+lifting the dumbbell only halfway (Class C) 
+
+lowering the dumbbell only halfway (Class D)
+
+throwing the hips to the front (Class E)
+
+The training dataset provides 19,622 samples with 159 variables with 5 types of activity to detect 1 correct method and 4 common mistakes (5 class total)
+
+#### Data Preprocess
+
+Read training dataset and testing dataset
+```{r}
+pml <- read.csv("pml-training.csv")
+pmlTest <- read.csv("pml-testing.csv")
+```
+
+Remove first 7 columns which are mainly information purpose, not for predictors
+
+```{r}
+pml <- pml[,-seq(1:7)]
+pmlTest <- pmlTest[,-seq(1:7)]
+```
+
+
+Remove those columns with NA's
+```{r}
+pml <- pml[,colSums(is.na(pml))==0]
+pmlTest <- pmlTest[,colSums(is.na(pmlTest))==0]
+```
+
+For training dataset, remove columns not numeric but keep classe column.
+For testing dataset, remove columns not numeric and remove problem id.
+```{r}
+nums1 <- sapply(pml, is.numeric)
+nums1["classe"] <- TRUE
+pml <- pml[nums1]
+nums2 <- sapply(pmlTest, is.numeric)
+nums2["problem_id"] <- FALSE
+pmlTest <- pmlTest[nums2]
+```
+
+Now columns that we are using for predictors
+```{r}
+names(pml)
+```
+
+#### Build the model
+
+Create training and testing dataset for cross validation inside original training dataset
+
+```{r}
+library(caret)
+inTrain <- createDataPartition(pml$classe, p=0.75, list=FALSE)
+pmlTraining <- pml[inTrain,]
+pmlTesting <- pml[-inTrain,]
+```
+
+Create Model using "Random Forest" method, this method used in "Qualitative Activity Recognition of Weight Lifting Exercises" as well
+
+```{r}
+train_control <- trainControl(method = "cv", number = 5, preProcOptions="pca")
+modFit <- train(classe ~ ., data=pmlTraining, method="rf", trControl=train_control, ntree=50)
+modFit
+```
+
+Check model with testing set in training dataset
+```{r}
+pred <- predict(modFit, pmlTesting)
+confusionMatrix(pmlTesting$classe, pred)
+```
+
+#### Apply to test dataset
+
+Finally apply model to test dataset to predict 20 test cases
+```{r}
+testPred <- predict(modFit, pmlTest)
+testPred
+```
+
