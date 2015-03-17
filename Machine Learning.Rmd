@@ -1,5 +1,5 @@
 ---
-title: "Regression Model Project"
+title: "Machine Learning Project"
 author: "Jerry Hsieh"
 date: "2014/11/20"
 output: html_document
